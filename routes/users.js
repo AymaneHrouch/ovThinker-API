@@ -6,6 +6,16 @@ const bcrypt = require("bcrypt");
 const auth = require("../middleware/auth");
 const admin = require("../middleware/admin");
 
+router.get('/', [auth, admin], async (req, res) => {
+    let users = await User.find();
+    res.send(users);
+})
+
+router.get('/:id', auth, async (req, res) => {
+    let user = await User.findById(req.params.id).select('-password -isAdmin')
+    res.send(user)
+})
+
 router.post('/', async (req, res) => {
     const { error } = validate(req.body)
     if(error) return res.status(400).send(error.details[0].message)
@@ -18,19 +28,7 @@ router.post('/', async (req, res) => {
     user.password = await bcrypt.hash(user.password, salt);
     await user.save();
 
-    res.send(`${user.name} is now a member`)
+    res.send(user)
 })
-
-router.get('/', [auth, admin], async (req, res) => {
-    let users = await User.find();
-    res.send(users);
-})
-
-
-
-
-
-
-
 
 module.exports = router;

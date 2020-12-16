@@ -12,10 +12,13 @@
     "bcrypt": "^5.0.0",
     "config": "^3.3.3",
     "express": "^4.17.1",
+    "express-async-errors": "^3.1.1",
     "hbs": "^4.1.1",
+    "helmet": "^4.2.0",
     "joi": "^13.1.0",
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.20",
-    "mongoose": "^5.11.5"
+    "mongoose": "^5.11.5",
+    "winston": "^3.3.3"
   }
 }

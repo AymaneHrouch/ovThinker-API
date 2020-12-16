@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 const Joi = require("joi");
 const jwt = require("jsonwebtoken");
 const config = require("config");
-const { journalSchema } = require("./journal")
 
 function validateUser(user) {
     schema = {
@@ -30,7 +29,6 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String
     },
-    data: [ journalSchema ],
     isAdmin: {
         type: Boolean,
         default: false

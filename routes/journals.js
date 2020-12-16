@@ -2,41 +2,77 @@ const express = require("express");
 const router = express.Router();
 const { find } = require("lodash");
 const { User } = require("../models/user");
-const { Journal } = require("../models/journal")
+const { Journal, journalSchema } = require("../models/journal");
 const auth = require("../middleware/auth");
+const _ = require("lodash");
 
-router.get('/', auth, async (req, res) => {
-    let user = await User.findOne({ _id: req.user._id });
-    res.send(user.data);
-})
+router.get("/", auth, async (req, res) => {
+  let journals = await Journal.find({ user: req.user._id });
+  res.send(journals);
+});
 
-router.post('/', auth, async(req, res) => {
-    let user = await User.findOne({ _id: req.user._id });
+router.get("/:id", auth, async (req, res) => {
+  if (req.params.id === "locked") {
+    let journals = await Journal.find({ locked: true, user: req.user._id });
+    return res.send(journals);
+  }
+  await Journal.findOne(
+    {
+      _id: req.params.id,
+      user: req.user._id,
+    },
+    function (err, doc) {
+      if (err) return res.status(404).send("not found");
+      if (doc) res.send(doc);
+    }
+  );
+});
+
+router.post("/", auth, async (req, res) => {
+  try {
     let journal = new Journal({
-        comment: req.body.str,
-        date: Date.now()
-    })
-    user.data.push(journal);
-    await user.save();
-    res.send(user)
-})
+      user: req.user._id,
+      ..._.pick(req.body, [
+        "comment",
+        "date",
+        "starred",
+        "locked",
+        "unlockDate",
+      ]),
+    });
 
-router.delete('/:id', auth, async(req, res) => {
-    let user =  await User.findByIdAndUpdate(req.user._id, {
-        $pull: {
-            data: { _id: req.params.id }
-        }
-    }, { new: true })
-    res.send(user.data)
-})
+    await journal.save();
+    res.send(journal);
+  } catch (ex) {
+    const obj = ex.errors;
+    res.status(400).send(obj[Object.keys(obj)[0]].message);
+  }
+});
 
-router.put('/:id', auth, async (req, res) => {
-    const query = { _id: req.user._id };
-    const updateDocument = { $set: { "data.$[element].comment": req.body.str } };
-    const options = { arrayFilters: [ { "element._id": req.params.id } ] } 
+router.put("/:id", auth, async (req, res) => {
+  try {
+    let journal = await Journal.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        user: req.user._id,
+      },
+      _.pick(req.body, ["comment", "date", "starred", "locked", "unlockDate"]),
+      { new: true }
+    );
+    res.send(journal);
+  } catch (ex) {
+    res.status(400).send("Entry with given ID not found.");
+  }
+});
 
-    let user = await User.update(query, updateDocument, options)
-    res.send(user)
-})
+router.delete("/:id", auth, async (req, res) => {
+  let journal = await Journal.findOneAndRemove(
+    { _id: req.params.id, user: req.user._id },
+    function (err, doc) {
+      if (err) res.status(404).send("entry with given id not found");
+      if (doc) res.send(doc);
+    }
+  );
+});
 
 module.exports = router;
