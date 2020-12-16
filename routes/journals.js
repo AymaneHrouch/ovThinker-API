@@ -1,8 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { find } = require("lodash");
-const { User } = require("../models/user");
-const { Journal, journalSchema } = require("../models/journal");
+const { Journal } = require("../models/journal");
 const auth = require("../middleware/auth");
 const _ = require("lodash");
 
