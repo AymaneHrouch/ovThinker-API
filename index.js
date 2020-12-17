@@ -1,5 +1,7 @@
 const express = require("express");
 const app = express();
+var cors = require("cors");
+app.use(cors())
 
 require("./startup/logging")();
 require("./startup/routes")(app);
@@ -8,5 +10,6 @@ require("./startup/logging")();
 require("./startup/config")();
 require("./middleware/ok")(app);
 
-const port = process.env.PORT || 3000;
-app.listen(port);
+
+
+app.listen(3900);

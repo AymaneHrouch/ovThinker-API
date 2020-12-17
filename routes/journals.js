@@ -5,8 +5,49 @@ const auth = require("../middleware/auth");
 const _ = require("lodash");
 
 router.get("/", auth, async (req, res) => {
-  let journals = await Journal.find({ user: req.user._id });
-  res.send(journals);
+  let { pageNumber, pageSize, year, month, day } = req.query;
+  pageNumber = parseInt(pageNumber);
+  pageSize = parseInt(pageSize);
+  year = parseInt(year);
+  month = parseInt(month);
+  day = parseInt(day);
+
+  if (year) {
+    if (day) {
+      const start = new Date(year, month, day);
+      const end = new Date(year, month, day + 1);
+
+      let journals = await Journal.find({
+        user: req.user._id,
+        date: { $gte: start, $lt: end },
+      })
+        .skip((pageNumber - 1) * pageSize)
+        .limit(pageSize)
+        .sort("date");
+
+      return res.send(journals);
+    }
+    if (month) {
+      const start = new Date(year, month);
+      const end = new Date(year, month + 1);
+      let journals = await Journal.find({
+        user: req.user._id,
+        date: { $gte: start, $lt: end },
+      })
+        .skip((pageNumber - 1) * pageSize)
+        .limit(pageSize)
+        .sort("date");
+
+      return res.send(journals);
+    }
+  } else {
+    let journals = await Journal.find({ user: req.user._id })
+      .skip((pageNumber - 1) * pageSize)
+      .limit(pageSize)
+      .sort("date");
+
+    return res.send(journals);
+  }
 });
 
 router.get("/:id", auth, async (req, res) => {
