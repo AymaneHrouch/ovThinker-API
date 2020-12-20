@@ -1,3 +1,4 @@
 {
-    "jwtPrivateKey": "mini_jwtPrivateKey"
+    "jwtPrivateKey": "mini_jwtPrivateKey",
+    "db": "mini_db"
 }
