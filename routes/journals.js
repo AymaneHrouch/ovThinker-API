@@ -3,6 +3,7 @@ const router = express.Router();
 const { Journal } = require("../models/journal");
 const auth = require("../middleware/auth");
 const _ = require("lodash");
+const { Types } = require("mongoose");
 
 router.get("/", auth, async (req, res) => {
   let { pageNumber, pageSize, year, month, day } = req.query;
@@ -20,51 +21,93 @@ router.get("/", auth, async (req, res) => {
       let journals = await Journal.find({
         user: req.user._id,
         date: { $gte: start, $lt: end },
+        locked: false,
       })
         .skip((pageNumber - 1) * pageSize)
         .limit(pageSize)
-        .sort("date");
+        .sort("-date");
 
       return res.send(journals);
     }
-    if (month) {
+    if (month !== null) {
       const start = new Date(year, month);
       const end = new Date(year, month + 1);
       let journals = await Journal.find({
         user: req.user._id,
         date: { $gte: start, $lt: end },
+        locked: false,
       })
         .skip((pageNumber - 1) * pageSize)
         .limit(pageSize)
-        .sort("date");
+        .sort("-date");
 
       return res.send(journals);
     }
   } else {
-    let journals = await Journal.find({ user: req.user._id })
+    let journals = await Journal.find({ user: req.user._id, locked: false })
       .skip((pageNumber - 1) * pageSize)
       .limit(pageSize)
-      .sort("date");
+      .sort("-date");
 
     return res.send(journals);
   }
 });
 
 router.get("/:id", auth, async (req, res) => {
-  if (req.params.id === "locked") {
-    let journals = await Journal.find({ locked: true, user: req.user._id });
-    return res.send(journals);
+  let { pageNumber, pageSize } = req.query;
+  pageNumber = parseInt(pageNumber);
+  pageSize = parseInt(pageSize);
+
+  if (req.params.id === "random") {
+    let journal = await Journal.aggregate([
+      {
+        $match: {
+          user: new Types.ObjectId(req.user._id),
+          locked: false,
+        },
+      },
+      { $sample: { size: 1 } },
+    ]);
+    if (journal[0]) return res.send(journal[0]["_id"]);
+    else return res.status(404).send("Journal collection is empty.");
   }
-  await Journal.findOne(
-    {
+
+  if (req.params.id === "locked") {
+    try {
+      let journals = await Journal.find({ locked: true, user: req.user._id })
+        .skip((pageNumber - 1) * pageSize)
+        .limit(pageSize)
+        .sort("-date")
+        .select("date unlockDate");
+      return res.send(journals);
+    } catch (ex) {
+      return res.status(404).send("Journal collection is empty.");
+    }
+  }
+
+  if (req.params.id === "starred") {
+    try {
+      let journals = await Journal.find({ starred: true, user: req.user._id })
+        .skip((pageNumber - 1) * pageSize)
+        .limit(pageSize)
+        .sort("-date");
+      return res.send(journals);
+    } catch (ex) {
+      return res.status(404).send("Journal collection is empty.");
+    }
+  }
+
+  try {
+    let journal = await Journal.findOne({
       _id: req.params.id,
       user: req.user._id,
-    },
-    function (err, doc) {
-      if (err) return res.status(404).send("not found");
-      if (doc) res.send(doc);
-    }
-  );
+      locked: false,
+    });
+
+    res.send(journal);
+  } catch (ex) {
+    winston.error(ex);
+  }
 });
 
 router.post("/", auth, async (req, res) => {
