@@ -15,8 +15,8 @@ router.get("/", auth, async (req, res) => {
 
   if (year) {
     if (day) {
-      const start = new Date(year, month, day);
-      const end = new Date(year, month, day + 1);
+      const start = new Date(Date.UTC(year, month, day));
+      const end = new Date(Date.UTC(year, month, day + 1));
 
       let journals = await Journal.find({
         user: req.user._id,
@@ -30,8 +30,8 @@ router.get("/", auth, async (req, res) => {
       return res.send(journals);
     }
     if (month !== null) {
-      const start = new Date(year, month);
-      const end = new Date(year, month + 1);
+      const start = new Date(Date.UTC(year, month));
+      const end = new Date(Date.UTC(year, month + 1));
       let journals = await Journal.find({
         user: req.user._id,
         date: { $gte: start, $lt: end },
