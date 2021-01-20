@@ -87,7 +87,7 @@ router.get("/:id", auth, async (req, res) => {
 
   if (req.params.id === "starred") {
     try {
-      let journals = await Journal.find({ starred: true, user: req.user._id })
+      let journals = await Journal.find({ starred: true, locked: false, user: req.user._id })
         .skip((pageNumber - 1) * pageSize)
         .limit(pageSize)
         .sort("-date");
