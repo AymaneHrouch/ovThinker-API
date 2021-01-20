@@ -1,6 +1,6 @@
 const winston = require("winston");
 const mongoose = require("mongoose");
-const config = require("config")
+const config = require("config");
 
 module.exports = function () {
   mongoose
@@ -9,5 +9,5 @@ module.exports = function () {
       useUnifiedTopology: true,
       useFindAndModify: false,
     })
-    .then(() => winston.info("Connected to MongoDB..."));
+    .then(() => winston.info("Connected to MongoDB hh"));
 };
