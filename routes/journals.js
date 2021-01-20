@@ -6,6 +6,8 @@ const _ = require("lodash");
 const { Types } = require("mongoose");
 const winston = require("winston");
 
+process.env.TZ = "Africa/Casablanca";
+
 router.get("/", auth, async (req, res) => {
   let { pageNumber, pageSize, year, month, day } = req.query;
   pageNumber = parseInt(pageNumber);
