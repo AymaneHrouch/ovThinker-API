@@ -7,21 +7,11 @@ const { Types } = require("mongoose");
 const winston = require("winston");
 
 router.get("/", auth, async (req, res) => {
-  let { pageNumber, pageSize, year, month, day } = req.query;
+  let { pageNumber, pageSize, start, end } = req.query;
   pageNumber = parseInt(pageNumber);
   pageSize = parseInt(pageSize);
-  year = parseInt(year);
-  month = parseInt(month);
-  day = parseInt(day);
 
-  if (year) {
-    if (day) {
-      const start = new Date(year, month, day);
-      const end = new Date(year, month, day + 1);
-
-      d = new Date();
-      console.log("date", start);
-
+  if (start) {
       let journals = await Journal.find({
         user: req.user._id,
         date: { $gte: start, $lt: end },
@@ -32,21 +22,6 @@ router.get("/", auth, async (req, res) => {
         .sort("-date");
 
       return res.send(journals);
-    }
-    if (month !== null) {
-      const start = new Date(year, month);
-      const end = new Date(year, month + 1);
-      let journals = await Journal.find({
-        user: req.user._id,
-        date: { $gte: start, $lt: end },
-        locked: false,
-      })
-        .skip((pageNumber - 1) * pageSize)
-        .limit(pageSize)
-        .sort("-date");
-
-      return res.send(journals);
-    }
   } else {
     let journals = await Journal.find({ user: req.user._id, locked: false })
       .skip((pageNumber - 1) * pageSize)
