@@ -4,8 +4,9 @@ const { Journal } = require("../models/journal");
 const auth = require("../middleware/auth");
 const _ = require("lodash");
 const { Types } = require("mongoose");
+const winston = require("winston");
 
-process.env.TZ = 'UTC';
+process.env.TZ = "UTC";
 
 router.get("/", auth, async (req, res) => {
   let { pageNumber, pageSize, year, month, day } = req.query;
@@ -20,6 +21,7 @@ router.get("/", auth, async (req, res) => {
       const start = new Date(year, month, day);
       const end = new Date(year, month, day + 1);
 
+      winston.info(`DAY - startDate: ${start} && endDate: ${end}`);
       let journals = await Journal.find({
         user: req.user._id,
         date: { $gte: start, $lt: end },
@@ -34,6 +36,7 @@ router.get("/", auth, async (req, res) => {
     if (month !== null) {
       const start = new Date(year, month);
       const end = new Date(year, month + 1);
+      winston.info(`MONTH - startDate: ${start} && endDate: ${end}`);
       let journals = await Journal.find({
         user: req.user._id,
         date: { $gte: start, $lt: end },
@@ -89,7 +92,11 @@ router.get("/:id", auth, async (req, res) => {
 
   if (req.params.id === "starred") {
     try {
-      let journals = await Journal.find({ starred: true, locked: false, user: req.user._id })
+      let journals = await Journal.find({
+        starred: true,
+        locked: false,
+        user: req.user._id,
+      })
         .skip((pageNumber - 1) * pageSize)
         .limit(pageSize)
         .sort("-date");
