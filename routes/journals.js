@@ -5,6 +5,8 @@ const auth = require("../middleware/auth");
 const _ = require("lodash");
 const { Types } = require("mongoose");
 
+process.env.TZ = 'UTC';
+
 router.get("/", auth, async (req, res) => {
   let { pageNumber, pageSize, year, month, day } = req.query;
   pageNumber = parseInt(pageNumber);
@@ -148,7 +150,7 @@ router.put("/:id", auth, async (req, res) => {
 });
 
 router.delete("/:id", auth, async (req, res) => {
-  let journal = await Journal.findOneAndRemove(
+  await Journal.findOneAndRemove(
     { _id: req.params.id, user: req.user._id },
     function (err, doc) {
       if (err) res.status(404).send("entry with given id not found");
