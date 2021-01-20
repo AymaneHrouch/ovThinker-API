@@ -6,8 +6,6 @@ const _ = require("lodash");
 const { Types } = require("mongoose");
 const winston = require("winston");
 
-process.env.TZ = "Africa/Casablanca";
-
 router.get("/", auth, async (req, res) => {
   let { pageNumber, pageSize, year, month, day } = req.query;
   pageNumber = parseInt(pageNumber);
@@ -21,7 +19,9 @@ router.get("/", auth, async (req, res) => {
       const start = new Date(year, month, day);
       const end = new Date(year, month, day + 1);
 
-      winston.info(`DAY - startDate: ${start} && endDate: ${end}`);
+      d = new Date();
+      console.log("date", start);
+
       let journals = await Journal.find({
         user: req.user._id,
         date: { $gte: start, $lt: end },
@@ -36,7 +36,6 @@ router.get("/", auth, async (req, res) => {
     if (month !== null) {
       const start = new Date(year, month);
       const end = new Date(year, month + 1);
-      winston.info(`MONTH - startDate: ${start} && endDate: ${end}`);
       let journals = await Journal.find({
         user: req.user._id,
         date: { $gte: start, $lt: end },
