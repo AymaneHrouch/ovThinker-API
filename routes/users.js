@@ -42,8 +42,8 @@ router.put("/changepassword", auth, async (req, res) => {
   user.password = await bcrypt.hash(req.body.newPassword, salt);
 
   schema = {
-    oldPassword: Joi.string().min(4).required(),
-    newPassword: Joi.string().min(4).required(),
+    oldPassword: Joi.string().required().label("Old password"),
+    newPassword: Joi.string().min(5).required().("New password"),
   };
 
   const { error } = Joi.validate(req.body, schema);
