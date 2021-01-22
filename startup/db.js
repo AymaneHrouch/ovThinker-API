@@ -9,5 +9,5 @@ module.exports = function () {
       useUnifiedTopology: true,
       useFindAndModify: false,
     })
-    .then(() => winston.info("Connected to MongoDB hh"));
+    .then(() => winston.info("Connected to MongoDB ..."));
 };
