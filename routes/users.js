@@ -32,7 +32,7 @@ router.post("/", async (req, res) => {
   res.send(user);
 });
 
-router.put("/:id", auth, async (req, res) => {
+router.put("/changepassword", auth, async (req, res) => {
   const user = await User.findById(req.user._id);
 
   const oldPassword = await bcrypt.compare(req.body.oldPassword, user.password);
@@ -45,10 +45,19 @@ router.put("/:id", auth, async (req, res) => {
     oldPassword: Joi.string().min(5).required(),
     newPassword: Joi.string().min(5).required(),
   };
-  
-  const {error} =  Joi.validate(req.body, schema)
-  if(error) return res.status(400).send(error.details[0].message)
-  
+
+  const { error } = Joi.validate(req.body, schema);
+  if (error) return res.status(400).send(error.details[0].message);
+
+  await user.save();
+  res.send(user);
+});
+
+router.put("/changename", auth, async (req, res) => {
+  const user = await User.findById(req.user._id);
+  user.name = req.body.name;
+  const token = user.genAuthToken();
+  res.header('x-auth-token', token)
   await user.save();
   res.send(user);
 });
