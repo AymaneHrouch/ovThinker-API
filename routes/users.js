@@ -43,7 +43,7 @@ router.put("/changepassword", auth, async (req, res) => {
 
   schema = {
     oldPassword: Joi.string().required().label("Old password"),
-    newPassword: Joi.string().min(5).required().("New password"),
+    newPassword: Joi.string().min(5).required().label("New password"),
   };
 
   const { error } = Joi.validate(req.body, schema);
