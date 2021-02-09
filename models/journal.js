@@ -8,6 +8,7 @@ const journalSchema = new mongoose.Schema({
   comment: {
     type: String,
     required: true,
+    trim: true
   },
   date: {
     type: Date,
