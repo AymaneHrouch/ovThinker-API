@@ -34,7 +34,8 @@ router.get("/", auth, async (req, res) => {
 });
 
 router.get("/:id", auth, async (req, res) => {
-  let { pageNumber, pageSize } = req.query;
+  let { pageNumber, pageSize, sort } = req.query;
+  const sorting = sort === "asc" ? "date" : "-date"
   pageNumber = parseInt(pageNumber);
   pageSize = parseInt(pageSize);
 
@@ -57,7 +58,7 @@ router.get("/:id", auth, async (req, res) => {
       let journals = await Journal.find({ locked: true, user: req.user._id })
         .skip((pageNumber - 1) * pageSize)
         .limit(pageSize)
-        .sort("-date")
+        .sort(sorting)
         .select("date unlockDate");
       return res.send(journals);
     } catch (ex) {
@@ -74,7 +75,7 @@ router.get("/:id", auth, async (req, res) => {
       })
         .skip((pageNumber - 1) * pageSize)
         .limit(pageSize)
-        .sort("-date");
+        .sort(sorting);
       return res.send(journals);
     } catch (ex) {
       return res.status(404).send("Journal collection is empty.");
