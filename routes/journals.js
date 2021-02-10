@@ -7,7 +7,8 @@ const { Types } = require("mongoose");
 const winston = require("winston");
 
 router.get("/", auth, async (req, res) => {
-  let { pageNumber, pageSize, start, end } = req.query;
+  let { pageNumber, pageSize, start, end, sort } = req.query;
+  const sorting = sort === "asc" ? "date" : "-date"
   pageNumber = parseInt(pageNumber);
   pageSize = parseInt(pageSize);
 
@@ -19,14 +20,14 @@ router.get("/", auth, async (req, res) => {
       })
         .skip((pageNumber - 1) * pageSize)
         .limit(pageSize)
-        .sort("-date");
+        .sort(sorting);
 
       return res.send(journals);
   } else {
     let journals = await Journal.find({ user: req.user._id, locked: false })
       .skip((pageNumber - 1) * pageSize)
       .limit(pageSize)
-      .sort("-date");
+      .sort(sorting);
 
     return res.send(journals);
   }
