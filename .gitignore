@@ -2,5 +2,4 @@ node_modules/
 logfile.log
 UncaughtExceptions.log
 coverage/
-backup.json
-seed.js
+backup/
