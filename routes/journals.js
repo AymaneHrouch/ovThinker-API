@@ -116,7 +116,7 @@ router.post("/", auth, async (req, res) => {
     let journal = new Journal({
       user: req.user._id,
       comment: comment,
-      ..._.pick(req.body, ["date", "starred", "locked", "unlockDate", "_id"]),
+      ..._.pick(req.body, ["date", "starred", "locked", "unlockDate"]),
     });
 
     await journal.save();
@@ -137,7 +137,7 @@ router.put("/:id", auth, async (req, res) => {
       },
       {
         comment: comment,
-        ..._.pick(req.body, ["date", "starred", "locked", "unlockDate", "_id"]),
+        ..._.pick(req.body, ["date", "starred", "locked", "unlockDate"]),
       },
       { new: true }
     );
