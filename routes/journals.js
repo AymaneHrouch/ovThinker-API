@@ -101,7 +101,7 @@ router.get("/:id", auth, async (req, res) => {
 
     journal = {
       comment: cryptr.decrypt(journal.comment),
-      ..._.pick(journal, ["date", "starred", "locked", "unlockDate"]),
+      ..._.pick(journal, ["date", "starred", "locked", "unlockDate", "_id"]),
     };
 
     res.send(journal);
@@ -116,7 +116,7 @@ router.post("/", auth, async (req, res) => {
     let journal = new Journal({
       user: req.user._id,
       comment: comment,
-      ..._.pick(req.body, ["date", "starred", "locked", "unlockDate"]),
+      ..._.pick(req.body, ["date", "starred", "locked", "unlockDate", "_id"]),
     });
 
     await journal.save();
@@ -137,7 +137,7 @@ router.put("/:id", auth, async (req, res) => {
       },
       {
         comment: comment,
-        ..._.pick(req.body, ["date", "starred", "locked", "unlockDate"]),
+        ..._.pick(req.body, ["date", "starred", "locked", "unlockDate", "_id"]),
       },
       { new: true }
     );
