@@ -1,4 +1,5 @@
 {
     "jwtPrivateKey": "",
+    "cryptrKey": "",
     "db": "mongodb://localhost/mini"
 }
