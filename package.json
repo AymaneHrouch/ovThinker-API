@@ -17,7 +17,6 @@
     "compression": "^1.7.4",
     "config": "^3.3.3",
     "cors": "^2.8.5",
-    "cryptr": "^6.0.2",
     "express": "^4.17.1",
     "express-async-errors": "^3.1.1",
     "hbs": "^4.1.1",
