@@ -101,7 +101,7 @@ router.get("/:id", auth, async (req, res) => {
 
     journal = {
       comment: cryptr.decrypt(journal.comment),
-      ..._.pick(journal, ["date", "starred", "locked", "unlockDate", "_id"]),
+      ..._.pick(journal, ["date", "starred", "locked", "unlockDate"]),
     };
 
     res.send(journal);
