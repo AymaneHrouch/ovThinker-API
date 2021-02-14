@@ -4,3 +4,4 @@ UncaughtExceptions.log
 coverage/
 seed*.js
 backup*.json
+MOCK*.json
