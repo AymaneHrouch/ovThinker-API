@@ -38,7 +38,7 @@ router.put("/changepassword", auth, async (req, res) => {
   const oldPassword = await bcrypt.compare(req.body.oldPassword, user.password);
   if (!oldPassword) return res.status(400).send("Invalid password.");
 
-  if (req.user._id == "6025d7a61adafc001705d0c6")
+  if (req.user._id === "6025d7a61adafc001705d0c6")
     return res.status(400).send("Yo! Chill Satan. This isn't your account. Nice try tho ;)");
 
   const salt = await bcrypt.genSalt(10);
