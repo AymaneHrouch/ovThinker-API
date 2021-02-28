@@ -8,21 +8,21 @@ const winston = require("winston");
 
 router.get("/", auth, async (req, res) => {
   let { pageNumber, pageSize, start, end, sort } = req.query;
-  const sorting = sort === "asc" ? "date" : "-date"
+  const sorting = sort === "asc" ? "date" : "-date";
   pageNumber = parseInt(pageNumber);
   pageSize = parseInt(pageSize);
 
   if (start) {
-      let journals = await Journal.find({
-        user: req.user._id,
-        date: { $gte: start, $lt: end },
-        locked: false,
-      })
-        .skip((pageNumber - 1) * pageSize)
-        .limit(pageSize)
-        .sort(sorting);
+    let journals = await Journal.find({
+      user: req.user._id,
+      date: { $gte: start, $lt: end },
+      locked: false,
+    })
+      .skip((pageNumber - 1) * pageSize)
+      .limit(pageSize)
+      .sort(sorting);
 
-      return res.send(journals);
+    return res.send(journals);
   } else {
     let journals = await Journal.find({ user: req.user._id, locked: false })
       .skip((pageNumber - 1) * pageSize)
@@ -35,7 +35,7 @@ router.get("/", auth, async (req, res) => {
 
 router.get("/:id", auth, async (req, res) => {
   let { pageNumber, pageSize, sort } = req.query;
-  const sorting = sort === "asc" ? "date" : "-date"
+  const sorting = sort === "asc" ? "date" : "-date";
   pageNumber = parseInt(pageNumber);
   pageSize = parseInt(pageSize);
 
@@ -70,6 +70,25 @@ router.get("/:id", auth, async (req, res) => {
     try {
       let journals = await Journal.find({
         starred: true,
+        locked: false,
+        user: req.user._id,
+      })
+        .skip((pageNumber - 1) * pageSize)
+        .limit(pageSize)
+        .sort(sorting);
+      return res.send(journals);
+    } catch (ex) {
+      return res.status(404).send("Journal collection is empty.");
+    }
+  }
+
+  if (req.params.id === "search") {
+    try {
+      if (!req.query.term)
+        return res.status(400).send("Search term is not allowed to be empty.");
+      let regex = new RegExp(req.query.term);
+      let journals = await Journal.find({
+        comment: { $regex: regex, $options: "i" },
         locked: false,
         user: req.user._id,
       })
