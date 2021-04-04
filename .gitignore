@@ -5,3 +5,4 @@ coverage/
 seed*.js
 backup*.json
 MOCK*.json
+changeword.js 
