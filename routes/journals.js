@@ -33,6 +33,13 @@ router.get("/", auth, async (req, res) => {
   }
 });
 
+router.get("/backup", auth, async (req, res) => {
+  const journals = await Journal.find({
+    user: req.user._id
+  })
+  return res.send(journals);
+})
+
 router.get("/:id", auth, async (req, res) => {
   let { pageNumber, pageSize, sort } = req.query;
   const sorting = sort === "asc" ? "date" : "-date";
