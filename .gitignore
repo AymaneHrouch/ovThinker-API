@@ -2,6 +2,7 @@ node_modules/
 logfile.log
 UncaughtExceptions.log
 coverage/
+.dev-logs/
 seed*.js
 backup*.json
 MOCK*.json
