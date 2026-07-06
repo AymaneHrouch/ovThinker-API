@@ -111,6 +111,103 @@ router.get("/:id", auth, async (req, res) => {
     return res.send({ total, journals });
   }
 
+  if (req.params.id === "stats") {
+    const journals = await Journal.find(
+      { user: req.user._id, locked: false },
+      "date comment starred"
+    );
+
+    const totalEntries = journals.length;
+    const starredCount = journals.filter(j => j.starred).length;
+
+    const weekdayNames = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const weekdayCounts = new Array(7).fill(0);
+
+    let totalWords = 0;
+    let longestEntry = null;
+    let firstEntryDate = null;
+
+    for (const j of journals) {
+      const words = j.comment
+        .replace(/\n/g, " ")
+        .split(" ")
+        .filter(w => w !== "").length;
+
+      totalWords += words;
+
+      if (!longestEntry || words > longestEntry.words)
+        longestEntry = { id: j._id, date: j.date, words };
+
+      if (!firstEntryDate || j.date < firstEntryDate) firstEntryDate = j.date;
+
+      weekdayCounts[j.date.getUTCDay()]++;
+    }
+
+    const averageWords = totalEntries
+      ? Math.round(totalWords / totalEntries)
+      : 0;
+
+    const maxWeekdayCount = Math.max(0, ...weekdayCounts);
+    const mostActiveWeekday = maxWeekdayCount
+      ? weekdayNames[weekdayCounts.indexOf(maxWeekdayCount)]
+      : null;
+
+    const dayKeys = [
+      ...new Set(journals.map(j => j.date.toISOString().slice(0, 10))),
+    ].sort();
+
+    const dayMs = 24 * 60 * 60 * 1000;
+    let longestStreak = 0;
+    let run = 0;
+    for (let i = 0; i < dayKeys.length; i++) {
+      if (
+        i === 0 ||
+        (Date.parse(dayKeys[i]) - Date.parse(dayKeys[i - 1])) / dayMs === 1
+      )
+        run++;
+      else run = 1;
+      longestStreak = Math.max(longestStreak, run);
+    }
+
+    let currentStreak = 0;
+    if (dayKeys.length) {
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const yesterdayKey = new Date(Date.now() - dayMs)
+        .toISOString()
+        .slice(0, 10);
+      const lastDay = dayKeys[dayKeys.length - 1];
+      if (lastDay === todayKey || lastDay === yesterdayKey) {
+        currentStreak = 1;
+        for (let i = dayKeys.length - 1; i > 0; i--) {
+          const diff =
+            (Date.parse(dayKeys[i]) - Date.parse(dayKeys[i - 1])) / dayMs;
+          if (diff === 1) currentStreak++;
+          else break;
+        }
+      }
+    }
+
+    return res.send({
+      totalEntries,
+      starredCount,
+      totalWords,
+      averageWords,
+      currentStreak,
+      longestStreak,
+      firstEntryDate,
+      mostActiveWeekday,
+      longestEntry,
+    });
+  }
+
   try {
     let journal = await Journal.findOne({
       _id: req.params.id,
