@@ -112,13 +112,19 @@ router.get("/:id", auth, async (req, res) => {
   }
 
   if (req.params.id === "stats") {
-    const journals = await Journal.find(
-      { user: req.user._id, locked: false },
-      "date comment starred"
-    );
+    const [journals, lockedCount] = await Promise.all([
+      Journal.find(
+        { user: req.user._id, locked: false },
+        "date comment starred"
+      ),
+      Journal.countDocuments({ user: req.user._id, locked: true }),
+    ]);
 
     const totalEntries = journals.length;
     const starredCount = journals.filter(j => j.starred).length;
+    const starredPercent = totalEntries
+      ? Math.round((starredCount / totalEntries) * 100)
+      : 0;
 
     const weekdayNames = [
       "Sunday",
@@ -130,10 +136,18 @@ router.get("/:id", auth, async (req, res) => {
       "Saturday",
     ];
     const weekdayCounts = new Array(7).fill(0);
+    const monthCounts = {};
+    const timeOfDayCounts = { Morning: 0, Afternoon: 0, Evening: 0, Night: 0 };
+
+    const now = new Date();
+    const currentYear = now.getUTCFullYear();
+    const currentMonth = now.getUTCMonth();
 
     let totalWords = 0;
     let longestEntry = null;
     let firstEntryDate = null;
+    let entriesThisMonth = 0;
+    let entriesThisYear = 0;
 
     for (const j of journals) {
       const words = j.comment
@@ -148,7 +162,24 @@ router.get("/:id", auth, async (req, res) => {
 
       if (!firstEntryDate || j.date < firstEntryDate) firstEntryDate = j.date;
 
+      const year = j.date.getUTCFullYear();
+      const month = j.date.getUTCMonth();
+      const hour = j.date.getUTCHours();
+
       weekdayCounts[j.date.getUTCDay()]++;
+
+      const monthKey = `${year}-${month}`;
+      monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+
+      if (hour >= 5 && hour < 12) timeOfDayCounts.Morning++;
+      else if (hour >= 12 && hour < 17) timeOfDayCounts.Afternoon++;
+      else if (hour >= 17 && hour < 21) timeOfDayCounts.Evening++;
+      else timeOfDayCounts.Night++;
+
+      if (year === currentYear) {
+        entriesThisYear++;
+        if (month === currentMonth) entriesThisMonth++;
+      }
     }
 
     const averageWords = totalEntries
@@ -160,26 +191,46 @@ router.get("/:id", auth, async (req, res) => {
       ? weekdayNames[weekdayCounts.indexOf(maxWeekdayCount)]
       : null;
 
+    const timeOfDayEntries = Object.entries(timeOfDayCounts);
+    const maxTimeOfDayCount = Math.max(0, ...timeOfDayEntries.map(([, c]) => c));
+    const mostActiveTimeOfDay = maxTimeOfDayCount
+      ? timeOfDayEntries.find(([, c]) => c === maxTimeOfDayCount)[0]
+      : null;
+
+    let busiestMonth = null;
+    for (const [key, count] of Object.entries(monthCounts)) {
+      if (!busiestMonth || count > busiestMonth.count) {
+        const [year, month] = key.split("-").map(Number);
+        busiestMonth = { year, month, count };
+      }
+    }
+
     const dayKeys = [
       ...new Set(journals.map(j => j.date.toISOString().slice(0, 10))),
     ].sort();
 
     const dayMs = 24 * 60 * 60 * 1000;
     let longestStreak = 0;
+    let longestGapDays = 0;
     let run = 0;
     for (let i = 0; i < dayKeys.length; i++) {
-      if (
-        i === 0 ||
-        (Date.parse(dayKeys[i]) - Date.parse(dayKeys[i - 1])) / dayMs === 1
-      )
-        run++;
-      else run = 1;
+      if (i === 0) {
+        run = 1;
+      } else {
+        const diff =
+          (Date.parse(dayKeys[i]) - Date.parse(dayKeys[i - 1])) / dayMs;
+        if (diff === 1) run++;
+        else {
+          run = 1;
+          longestGapDays = Math.max(longestGapDays, diff - 1);
+        }
+      }
       longestStreak = Math.max(longestStreak, run);
     }
 
     let currentStreak = 0;
     if (dayKeys.length) {
-      const todayKey = new Date().toISOString().slice(0, 10);
+      const todayKey = now.toISOString().slice(0, 10);
       const yesterdayKey = new Date(Date.now() - dayMs)
         .toISOString()
         .slice(0, 10);
@@ -195,16 +246,33 @@ router.get("/:id", auth, async (req, res) => {
       }
     }
 
+    let consistencyRate = 0;
+    if (dayKeys.length) {
+      const todayKey = now.toISOString().slice(0, 10);
+      const totalDaysRange =
+        Math.floor((Date.parse(todayKey) - Date.parse(dayKeys[0])) / dayMs) +
+        1;
+      consistencyRate = Math.round((dayKeys.length / totalDaysRange) * 100);
+    }
+
     return res.send({
       totalEntries,
       starredCount,
+      starredPercent,
+      lockedCount,
       totalWords,
       averageWords,
       currentStreak,
       longestStreak,
+      longestGapDays,
       firstEntryDate,
       mostActiveWeekday,
+      mostActiveTimeOfDay,
       longestEntry,
+      entriesThisMonth,
+      entriesThisYear,
+      busiestMonth,
+      consistencyRate,
     });
   }
 
