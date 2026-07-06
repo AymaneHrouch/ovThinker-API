@@ -90,22 +90,25 @@ router.get("/:id", auth, async (req, res) => {
   }
 
   if (req.params.id === "search") {
-    try {
-      if (!req.query.term)
-        return res.status(400).send("Search term is not allowed to be empty.");
-      let regex = new RegExp(req.query.term);
-      let journals = await Journal.find({
-        comment: { $regex: regex, $options: "i" },
-        locked: false,
-        user: req.user._id,
-      })
+    if (!req.query.term)
+      return res.status(400).send("Search term is not allowed to be empty.");
+
+    const escapedTerm = req.query.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const query = {
+      comment: { $regex: escapedTerm, $options: "i" },
+      locked: false,
+      user: req.user._id,
+    };
+
+    const [journals, total] = await Promise.all([
+      Journal.find(query)
         .skip((pageNumber - 1) * pageSize)
         .limit(pageSize)
-        .sort(sorting);
-      return res.send([{ resultsCount: journals.length }, ...journals]);
-    } catch (ex) {
-      return res.status(404).send("Journal collection is empty.");
-    }
+        .sort(sorting),
+      Journal.countDocuments(query),
+    ]);
+
+    return res.send({ total, journals });
   }
 
   try {
