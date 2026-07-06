@@ -212,6 +212,8 @@ router.get("/:id", auth, async (req, res) => {
     const dayMs = 24 * 60 * 60 * 1000;
     let longestStreak = 0;
     let longestGapDays = 0;
+    let longestGapStart = null;
+    let longestGapEnd = null;
     let run = 0;
     for (let i = 0; i < dayKeys.length; i++) {
       if (i === 0) {
@@ -222,7 +224,12 @@ router.get("/:id", auth, async (req, res) => {
         if (diff === 1) run++;
         else {
           run = 1;
-          longestGapDays = Math.max(longestGapDays, diff - 1);
+          const gap = diff - 1;
+          if (gap > longestGapDays) {
+            longestGapDays = gap;
+            longestGapStart = dayKeys[i - 1];
+            longestGapEnd = dayKeys[i];
+          }
         }
       }
       longestStreak = Math.max(longestStreak, run);
@@ -265,6 +272,8 @@ router.get("/:id", auth, async (req, res) => {
       currentStreak,
       longestStreak,
       longestGapDays,
+      longestGapStart,
+      longestGapEnd,
       firstEntryDate,
       mostActiveWeekday,
       mostActiveTimeOfDay,
