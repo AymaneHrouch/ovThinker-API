@@ -137,6 +137,7 @@ router.get("/:id", auth, async (req, res) => {
     ];
     const weekdayCounts = new Array(7).fill(0);
     const monthCounts = {};
+    const yearCounts = {};
     const timeOfDayCounts = { Morning: 0, Afternoon: 0, Evening: 0, Night: 0 };
 
     const now = new Date();
@@ -170,6 +171,7 @@ router.get("/:id", auth, async (req, res) => {
 
       const monthKey = `${year}-${month}`;
       monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
+      yearCounts[year] = (yearCounts[year] || 0) + 1;
 
       if (hour >= 5 && hour < 12) timeOfDayCounts.Morning++;
       else if (hour >= 12 && hour < 17) timeOfDayCounts.Afternoon++;
@@ -191,6 +193,15 @@ router.get("/:id", auth, async (req, res) => {
       ? weekdayNames[weekdayCounts.indexOf(maxWeekdayCount)]
       : null;
 
+    const minWeekdayCount = totalEntries ? Math.min(...weekdayCounts) : 0;
+    const leastActiveWeekday = totalEntries
+      ? weekdayNames[weekdayCounts.indexOf(minWeekdayCount)]
+      : null;
+
+    const entriesPerYear = Object.entries(yearCounts)
+      .map(([year, count]) => ({ year: Number(year), count }))
+      .sort((a, b) => a.year - b.year);
+
     const timeOfDayEntries = Object.entries(timeOfDayCounts);
     const maxTimeOfDayCount = Math.max(0, ...timeOfDayEntries.map(([, c]) => c));
     const mostActiveTimeOfDay = maxTimeOfDayCount
@@ -211,19 +222,24 @@ router.get("/:id", auth, async (req, res) => {
 
     const dayMs = 24 * 60 * 60 * 1000;
     let longestStreak = 0;
+    let longestStreakStart = null;
+    let longestStreakEnd = null;
     let longestGapDays = 0;
     let longestGapStart = null;
     let longestGapEnd = null;
     let run = 0;
+    let runStart = null;
     for (let i = 0; i < dayKeys.length; i++) {
       if (i === 0) {
         run = 1;
+        runStart = dayKeys[0];
       } else {
         const diff =
           (Date.parse(dayKeys[i]) - Date.parse(dayKeys[i - 1])) / dayMs;
         if (diff === 1) run++;
         else {
           run = 1;
+          runStart = dayKeys[i];
           const gap = diff - 1;
           if (gap > longestGapDays) {
             longestGapDays = gap;
@@ -232,7 +248,11 @@ router.get("/:id", auth, async (req, res) => {
           }
         }
       }
-      longestStreak = Math.max(longestStreak, run);
+      if (run > longestStreak) {
+        longestStreak = run;
+        longestStreakStart = runStart;
+        longestStreakEnd = dayKeys[i];
+      }
     }
 
     let currentStreak = 0;
@@ -254,13 +274,20 @@ router.get("/:id", auth, async (req, res) => {
     }
 
     let consistencyRate = 0;
+    let daysSinceFirstEntry = 0;
     if (dayKeys.length) {
       const todayKey = now.toISOString().slice(0, 10);
-      const totalDaysRange =
+      daysSinceFirstEntry =
         Math.floor((Date.parse(todayKey) - Date.parse(dayKeys[0])) / dayMs) +
         1;
-      consistencyRate = Math.round((dayKeys.length / totalDaysRange) * 100);
+      consistencyRate = Math.round(
+        (dayKeys.length / daysSinceFirstEntry) * 100
+      );
     }
+
+    const avgEntriesPerWeek = daysSinceFirstEntry
+      ? Math.round((totalEntries / (daysSinceFirstEntry / 7)) * 10) / 10
+      : 0;
 
     return res.send({
       totalEntries,
@@ -271,17 +298,23 @@ router.get("/:id", auth, async (req, res) => {
       averageWords,
       currentStreak,
       longestStreak,
+      longestStreakStart,
+      longestStreakEnd,
       longestGapDays,
       longestGapStart,
       longestGapEnd,
       firstEntryDate,
+      daysSinceFirstEntry,
       mostActiveWeekday,
+      leastActiveWeekday,
       mostActiveTimeOfDay,
       longestEntry,
       entriesThisMonth,
       entriesThisYear,
+      entriesPerYear,
       busiestMonth,
       consistencyRate,
+      avgEntriesPerWeek,
     });
   }
 
