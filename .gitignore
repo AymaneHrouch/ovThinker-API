@@ -3,6 +3,7 @@ logfile.log
 UncaughtExceptions.log
 coverage/
 .dev-logs/
+.env
 .env.prod
 seed*.js
 backup*.json
