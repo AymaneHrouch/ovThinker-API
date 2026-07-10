@@ -28,7 +28,13 @@ const journalSchema = new mongoose.Schema({
       return this.locked;
     },
   },
+  tags: {
+    type: [String],
+    default: [],
+  },
 });
+
+journalSchema.index({ user: 1, tags: 1 });
 
 const Journal = mongoose.model("Journal", journalSchema);
 

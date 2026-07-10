@@ -5,6 +5,7 @@ const auth = require("../middleware/auth");
 const _ = require("lodash");
 const { Types } = require("mongoose");
 const winston = require("winston");
+const { extractTags, sanitizeTags } = require("../utils/extractTags");
 
 router.get("/", auth, async (req, res) => {
   let { pageNumber, pageSize, start, end, sort } = req.query;
@@ -99,6 +100,34 @@ router.get("/:id", auth, async (req, res) => {
       locked: false,
       user: req.user._id,
     };
+
+    const [journals, total] = await Promise.all([
+      Journal.find(query)
+        .skip((pageNumber - 1) * pageSize)
+        .limit(pageSize)
+        .sort(sorting),
+      Journal.countDocuments(query),
+    ]);
+
+    return res.send({ total, journals });
+  }
+
+  if (req.params.id === "tags") {
+    const tags = await Journal.aggregate([
+      { $match: { user: new Types.ObjectId(req.user._id), locked: false } },
+      { $unwind: "$tags" },
+      { $group: { _id: "$tags", count: { $sum: 1 } } },
+      { $sort: { count: -1, _id: 1 } },
+    ]);
+    return res.send(tags.map(t => ({ tag: t._id, count: t.count })));
+  }
+
+  if (req.params.id === "tag") {
+    if (!req.query.tag)
+      return res.status(400).send("Tag is not allowed to be empty.");
+
+    const tag = req.query.tag.toLowerCase();
+    const query = { tags: tag, locked: false, user: req.user._id };
 
     const [journals, total] = await Promise.all([
       Journal.find(query)
@@ -344,6 +373,13 @@ router.post("/", auth, async (req, res) => {
       ]),
     });
 
+    journal.tags = [
+      ...new Set([
+        ...extractTags(journal.comment),
+        ...sanitizeTags(Array.isArray(req.body.tags) ? req.body.tags : []),
+      ]),
+    ];
+
     await journal.save();
     res.send(journal);
   } catch (ex) {
@@ -354,12 +390,28 @@ router.post("/", auth, async (req, res) => {
 
 router.put("/:id", auth, async (req, res) => {
   try {
+    const update = _.pick(req.body, [
+      "comment",
+      "date",
+      "starred",
+      "locked",
+      "unlockDate",
+    ]);
+    if (update.comment !== undefined) {
+      update.tags = [
+        ...new Set([
+          ...extractTags(update.comment),
+          ...sanitizeTags(Array.isArray(req.body.tags) ? req.body.tags : []),
+        ]),
+      ];
+    }
+
     let journal = await Journal.findOneAndUpdate(
       {
         _id: req.params.id,
         user: req.user._id,
       },
-      _.pick(req.body, ["comment", "date", "starred", "locked", "unlockDate"]),
+      update,
       { new: true }
     );
     res.send(journal);
