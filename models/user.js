@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  tagOrder: {
+    type: [String],
+    default: [],
+  },
 });
 
 userSchema.methods.genAuthToken = function () {

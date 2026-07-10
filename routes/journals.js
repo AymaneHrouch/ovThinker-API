@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { Journal } = require("../models/journal");
+const { User } = require("../models/user");
 const auth = require("../middleware/auth");
 const _ = require("lodash");
 const { Types } = require("mongoose");
@@ -113,13 +114,25 @@ router.get("/:id", auth, async (req, res) => {
   }
 
   if (req.params.id === "tags") {
-    const tags = await Journal.aggregate([
-      { $match: { user: new Types.ObjectId(req.user._id), locked: false } },
-      { $unwind: "$tags" },
-      { $group: { _id: "$tags", count: { $sum: 1 } } },
-      { $sort: { count: -1, _id: 1 } },
+    const [tags, user] = await Promise.all([
+      Journal.aggregate([
+        { $match: { user: new Types.ObjectId(req.user._id), locked: false } },
+        { $unwind: "$tags" },
+        { $group: { _id: "$tags", count: { $sum: 1 } } },
+        { $sort: { count: -1, _id: 1 } },
+      ]),
+      User.findById(req.user._id).select("tagOrder"),
     ]);
-    return res.send(tags.map(t => ({ tag: t._id, count: t.count })));
+
+    const byTag = new Map(tags.map(t => [t._id, { tag: t._id, count: t.count }]));
+    const savedOrder = (user && user.tagOrder) || [];
+    const ordered = savedOrder.filter(tag => byTag.has(tag)).map(tag => byTag.get(tag));
+    const orderedTags = new Set(ordered.map(t => t.tag));
+    const remaining = tags
+      .filter(t => !orderedTags.has(t._id))
+      .map(t => ({ tag: t._id, count: t.count }));
+
+    return res.send([...ordered, ...remaining]);
   }
 
   if (req.params.id === "tag") {
@@ -358,6 +371,15 @@ router.get("/:id", auth, async (req, res) => {
   } catch (ex) {
     winston.error(ex);
   }
+});
+
+router.put("/tags/order", auth, async (req, res) => {
+  if (!Array.isArray(req.body.order))
+    return res.status(400).send("Order must be an array of tags.");
+
+  const tagOrder = sanitizeTags(req.body.order);
+  await User.findByIdAndUpdate(req.user._id, { tagOrder });
+  res.send({ tagOrder });
 });
 
 router.post("/", auth, async (req, res) => {
