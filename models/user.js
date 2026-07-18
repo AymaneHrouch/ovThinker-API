@@ -37,6 +37,19 @@ const userSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  exportPassphrase: {
+    iv: String,
+    tag: String,
+    data: String,
+  },
+  exportTokenHash: {
+    type: String,
+    index: true,
+    sparse: true,
+  },
+  exportTokenCreatedAt: {
+    type: Date,
+  },
 });
 
 userSchema.methods.genAuthToken = function () {

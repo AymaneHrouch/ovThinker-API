@@ -8,4 +8,6 @@ coverage/
 seed*.js
 backup*.json
 MOCK*.json
-changeword.js 
+changeword.js
+*.enc
+aymanediary-export-*.json
