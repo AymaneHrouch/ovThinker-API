@@ -184,6 +184,7 @@ router.get("/:id", auth, async (req, res) => {
     let firstEntryDate = null;
     let entriesThisMonth = 0;
     let entriesThisYear = 0;
+    const dailyCounts = {};
 
     for (const j of journals) {
       const words = j.comment
@@ -203,6 +204,9 @@ router.get("/:id", auth, async (req, res) => {
       const hour = j.date.getUTCHours();
 
       weekdayCounts[j.date.getUTCDay()]++;
+
+      const dayKey = j.date.toISOString().slice(0, 10);
+      dailyCounts[dayKey] = (dailyCounts[dayKey] || 0) + 1;
 
       const monthKey = `${year}-${month}`;
       monthCounts[monthKey] = (monthCounts[monthKey] || 0) + 1;
@@ -350,6 +354,7 @@ router.get("/:id", auth, async (req, res) => {
       busiestMonth,
       consistencyRate,
       avgEntriesPerWeek,
+      dailyCounts,
     });
   }
 
